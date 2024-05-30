@@ -104,7 +104,7 @@ services:
   webserver:
     image: apache/airflow:latest
     command: webserver
-    entrypoint: []
+    entrypoint: ['/opt/airflow/airflow_script/eltscript.sh']
     depends_on:
       - postgres
     environment:
@@ -118,7 +118,7 @@ services:
         max-file:"3"
     volumes:
       - ./dags:/opt/airflow/dags
-      # -
+      - ./airflow_script/eltscript.sh:/opt/airflow/airflow_script/eltscript.sh
     ports:
       - "8080:8080"
     healthcheck:
