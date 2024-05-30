@@ -128,6 +128,19 @@ services:
       retries: 3
     networks:
       - confluent
+    
+  postgres:
+    image: postgres:15.6
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    logging:
+      options:
+        max-size: 10m
+        max-file: "3"
+    networks:
+      - confluent
 
 networks:
   confluent:
