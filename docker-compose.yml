@@ -11,7 +11,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     healthcheck:
-      test: ['CMD', 'bash', '-c' , "echo, 'ruok', | nc localhost 2181"]
+      test: ['CMD', 'bash', '-c', "echo 'ruok' | nc localhost 2181"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -20,7 +20,7 @@ services:
 
   broker:
     image: confluentinc/cp-server:7.4.0
-    hostname: broker 
+    hostname: broker
     container_name: broker
     depends_on:
       zookeeper:
@@ -50,7 +50,7 @@ services:
     networks:
       - confluent
     healthcheck:
-      test: [ "CMD", "bash", "-c", 'nc -z localhost 9092' ]
+      test: ["CMD", "bash", "-c", 'nc -z localhost 9092']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -71,10 +71,11 @@ services:
     networks:
       - confluent
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/" ]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/"]
       interval: 30s
       timeout: 10s
       retries: 5
+
   control-center:
     image: confluentinc/cp-enterprise-control-center:7.4.0
     hostname: control-center
@@ -95,16 +96,11 @@ services:
       PORT: 9021
     networks:
       - confluent
-    # healthcheck:
-    #   test: ["CMD", "curl", "-f", "http://localhost:9021/health"]
-    #   interval: 30s
-    #   timeout: 10s
-    #   retries: 5
 
   webserver:
-    image: apache/airflow:latest
-    command: webserver
-    entrypoint: ['/opt/airflow/airflow_script/eltscript.sh']
+    build: .
+    container_name: airflow-webserver
+    command: bash -c "airflow db init && airflow webserver"
     depends_on:
       - postgres
     environment:
@@ -122,7 +118,7 @@ services:
     ports:
       - "8080:8080"
     healthcheck:
-      test: ['CMD-SHELL', "[ -f /opt/airflow/airflow-webserver.pid]"]
+      test: ['CMD-SHELL', "[ -f /opt/airflow/airflow-webserver.pid ]"]
       interval: 30s
       timeout: 30s
       retries: 3
@@ -130,7 +126,8 @@ services:
       - confluent
 
   scheduler:
-    image: apache/airflow:latest
+    build: .
+    container_name: airflow-scheduler
     depends_on:
       webserver:
         condition: service_healthy
@@ -142,11 +139,10 @@ services:
       - EXECUTOR=Sequential
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__WEBSERVER__SECRET_KEY=secret
-    command: bash -c "pip install -r ./requirements.txt && airflow db upgrade && airflow scheduler"
+    command: bash -c "pip install --user -r ./requirements.txt && airflow db upgrade && airflow scheduler"
     networks:
       - confluent
   
-    
   postgres:
     image: postgres:15.6
     environment:
