@@ -100,7 +100,6 @@ services:
   webserver:
     build: .
     container_name: airflow-webserver
-    command: bash -c "airflow db init && airflow webserver"
     depends_on:
       - postgres
     environment:
@@ -129,8 +128,7 @@ services:
     build: .
     container_name: airflow-scheduler
     depends_on:
-      webserver:
-        condition: service_healthy
+      - postgres
     volumes:
       - ./dags:/opt/airflow/dags
       - ./requirements.txt:/opt/airflow/requirements.txt

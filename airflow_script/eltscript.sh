@@ -2,13 +2,18 @@
 
 set -e
 
+echo "Starting script execution..."
+
 if [ -e "/opt/airflow/requirements.txt" ]; then
-    $(command python) pip install --upgrade pip
-    $(command -v pip) install --user -r /opt/airflow/requirements.txt
+    echo "Installing Python packages from requirements.txt..."
+    python -m pip install --upgrade pip
+    pip install --user -r /opt/airflow/requirements.txt
 fi
 
 if [ ! -f "/opt/airflow/airflow.db" ]; then
-    airflow db init && \
+    echo "Initializing Airflow database..."
+    airflow db init
+    echo "Creating Airflow user..."
     airflow users create \
         --username admin \
         --firstname admin \
@@ -18,6 +23,8 @@ if [ ! -f "/opt/airflow/airflow.db" ]; then
         --password admin
 fi
 
-$(command -v airflow) db upgrade
+echo "Upgrading Airflow database..."
+airflow db upgrade
 
+echo "Starting Airflow webserver..."
 exec airflow webserver

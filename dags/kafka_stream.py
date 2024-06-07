@@ -5,7 +5,7 @@ from airflow.operators.python import PythonOperator
 
 default_args = {
     'owner': 'airocit',
-    'start_date': datetime(2024, 5, 27, 10, 0)
+    'start_date': datetime(2024, 6, 7, 16, 0)
 }
 
 def get_data():
@@ -36,7 +36,7 @@ def stream_data():
     import time
     res = get_data()
     res = format_data(res)
-    producer = KafkaProducer(bootstrap_servers=['broker:29092'], max_block_ms=5000)
+    producer = KafkaProducer(bootstrap_servers=['broker:9092'], max_block_ms=5000)
     producer.send('users_created', json.dumps(res).encode('utf-8'))
     producer.flush()
     producer.close()
@@ -52,3 +52,5 @@ with DAG(
        task_id='stream_data_from_api',
        python_callable=stream_data
     )
+
+# stream_data()
