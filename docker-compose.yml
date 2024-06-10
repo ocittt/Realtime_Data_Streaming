@@ -96,12 +96,21 @@ services:
       PORT: 9021
     networks:
       - confluent
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9021/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   webserver:
     build: .
     container_name: airflow-webserver
+    command: webserver
+    entrypoint: ["/opt/airflow/airflow_script/eltscript.sh"]
     depends_on:
+      - broker
       - postgres
+
     environment:
       - LOAD_EX=n
       - EXECUTOR=Sequential
@@ -114,6 +123,7 @@ services:
     volumes:
       - ./dags:/opt/airflow/dags
       - ./airflow_script/eltscript.sh:/opt/airflow/airflow_script/eltscript.sh
+      - ./requirements.txt:/opt/airflow/requirements.txt
     ports:
       - "8080:8080"
     healthcheck:
@@ -128,16 +138,18 @@ services:
     build: .
     container_name: airflow-scheduler
     depends_on:
+      - broker
       - postgres
     volumes:
       - ./dags:/opt/airflow/dags
       - ./requirements.txt:/opt/airflow/requirements.txt
+      - ./airflow_script/eltscript.sh:/opt/airflow/airflow_script/eltscript.sh
     environment:
       - LOAD_EX=n
       - EXECUTOR=Sequential
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__WEBSERVER__SECRET_KEY=secret
-    command: bash -c "pip install --user -r ./requirements.txt && airflow db upgrade && airflow scheduler"
+    entrypoint: ["/opt/airflow/airflow_script/eltscript.sh"]
     networks:
       - confluent
   

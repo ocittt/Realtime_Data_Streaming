@@ -26,5 +26,5 @@ fi
 echo "Upgrading Airflow database..."
 airflow db upgrade
 
-echo "Starting Airflow webserver..."
-exec airflow webserver
+echo "Starting Airflow webserver and scheduler..."
+exec airflow webserver & exec airflow scheduler
