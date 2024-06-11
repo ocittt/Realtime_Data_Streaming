@@ -83,6 +83,8 @@ services:
     depends_on:
       broker:
         condition: service_healthy
+      schema-registry:
+        condition: service_healthy
     ports:
       - "9021:9021"
     environment:
@@ -103,14 +105,14 @@ services:
       retries: 5
 
   webserver:
-    build: .
-    container_name: airflow-webserver
+    image: apache/airflow:latest-python3.10
     command: webserver
-    entrypoint: ["/opt/airflow/airflow_script/eltscript.sh"]
+    entrypoint: ['/opt/airflow/airflow_script/eltscript.sh']
     depends_on:
-      - broker
-      - postgres
-
+      postgres:
+        condition: service_started
+      control-center:
+        condition: service_healthy
     environment:
       - LOAD_EX=n
       - EXECUTOR=Sequential
@@ -135,21 +137,24 @@ services:
       - confluent
 
   scheduler:
-    build: .
-    container_name: airflow-scheduler
+    image: apache/airflow:latest-python3.10
     depends_on:
-      - broker
-      - postgres
+      postgres:
+        condition: service_started
+      control-center:
+        condition: service_healthy
+      webserver:
+        condition: service_healthy
     volumes:
       - ./dags:/opt/airflow/dags
-      - ./requirements.txt:/opt/airflow/requirements.txt
       - ./airflow_script/eltscript.sh:/opt/airflow/airflow_script/eltscript.sh
+      - ./requirements.txt:/opt/airflow/requirements.txt
     environment:
       - LOAD_EX=n
       - EXECUTOR=Sequential
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
       - AIRFLOW__WEBSERVER__SECRET_KEY=secret
-    entrypoint: ["/opt/airflow/airflow_script/eltscript.sh"]
+    command:  bash -c "pip install -r ./requirements.txt && airflow db upgrade && airflow scheduler"
     networks:
       - confluent
   

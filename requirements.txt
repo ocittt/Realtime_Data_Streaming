@@ -1,9 +1,0 @@
-apache-airflow==2.6.0
-kafka-python==2.0.2
-apache-airflow-providers-docker
-confluent-kafka
-apache-airflow-providers-docker
-apache-airflow-providers-ftp==2.0.1
-apache-airflow-providers-http==2.0.1
-apache-airflow-providers-imap==2.0.1
-apache-airflow-providers-postgres==2.3.0

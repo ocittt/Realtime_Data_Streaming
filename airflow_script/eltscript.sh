@@ -6,8 +6,8 @@ echo "Starting script execution..."
 
 if [ -e "/opt/airflow/requirements.txt" ]; then
     echo "Installing Python packages from requirements.txt..."
-    python -m pip install --upgrade pip
-    pip install --user -r /opt/airflow/requirements.txt
+    python pip install --upgrade pip
+    pip install --user -r requirements.txt
 fi
 
 if [ ! -f "/opt/airflow/airflow.db" ]; then
@@ -27,4 +27,4 @@ echo "Upgrading Airflow database..."
 airflow db upgrade
 
 echo "Starting Airflow webserver and scheduler..."
-exec airflow webserver & exec airflow scheduler
+exec airflow webserver
