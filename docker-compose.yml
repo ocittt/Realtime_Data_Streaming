@@ -2,24 +2,24 @@ version: '3'
 
 services:
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.0
-    hostname: zookeeper
-    container_name: zookeeper
-    ports:
-      - "2181:2181"
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    healthcheck:
-      test: ['CMD', 'bash', '-c', "echo 'ruok' | nc localhost 2181"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - confluent
+      image: confluentinc/cp-zookeeper:latest
+      hostname: zookeeper
+      container_name: zookeeper
+      ports:
+        - "2181:2181"
+      environment:
+        ZOOKEEPER_CLIENT_PORT: 2181
+        ZOOKEEPER_TICK_TIME: 2000
+      healthcheck:
+        test: ['CMD', 'bash', '-c', "echo 'ruok' | nc localhost 2181"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      networks:
+        - confluent
 
   broker:
-    image: confluentinc/cp-server:7.4.0
+    image: confluentinc/cp-server:latest
     hostname: broker
     container_name: broker
     depends_on:
@@ -50,13 +50,13 @@ services:
     networks:
       - confluent
     healthcheck:
-      test: ["CMD", "bash", "-c", 'nc -z localhost 9092']
+      test: [ "CMD", "bash", "-c", 'nc -z localhost 9092']
       interval: 10s
       timeout: 5s
       retries: 5
 
   schema-registry:
-    image: confluentinc/cp-schema-registry:7.4.0
+    image: confluentinc/cp-schema-registry:latest
     hostname: schema-registry
     container_name: schema-registry
     depends_on:
@@ -71,13 +71,13 @@ services:
     networks:
       - confluent
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/"]
       interval: 30s
       timeout: 10s
       retries: 5
 
   control-center:
-    image: confluentinc/cp-enterprise-control-center:7.4.0
+    image: confluentinc/cp-enterprise-control-center:latest
     hostname: control-center
     container_name: control-center
     depends_on:
@@ -117,7 +117,7 @@ services:
       - LOAD_EX=n
       - EXECUTOR=Sequential
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-      - AIRFLOW__WEBSERVER__SECRET_KEY=secret
+      - AIRFLOW_WEBSERVER_SECRET_KEY=very_secure_key
     logging:
       options:
         max-size: 10m
@@ -139,10 +139,10 @@ services:
   scheduler:
     image: apache/airflow:latest-python3.10
     depends_on:
-      postgres:
-        condition: service_started
-      control-center:
-        condition: service_healthy
+      # postgres:
+      #   condition: service_started
+      # control-center:
+      #   condition: service_healthy
       webserver:
         condition: service_healthy
     volumes:
@@ -153,7 +153,7 @@ services:
       - LOAD_EX=n
       - EXECUTOR=Sequential
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
-      - AIRFLOW__WEBSERVER__SECRET_KEY=secret
+      - AIRFLOW_WEBSERVER_SECRET_KEY=very_secure_key
     command:  bash -c "pip install -r ./requirements.txt && airflow db upgrade && airflow scheduler"
     networks:
       - confluent
