@@ -1,143 +1,236 @@
 version: '3'
+## Specifies the version of the Docker Compose file format to use.
 
 services:
   zookeeper:
-      image: confluentinc/cp-zookeeper:latest
-      hostname: zookeeper
-      container_name: zookeeper
-      ports:
-        - "2181:2181"
-      environment:
-        ZOOKEEPER_CLIENT_PORT: 2181
-        ZOOKEEPER_TICK_TIME: 2000
-      healthcheck:
-        test: ['CMD', 'bash', '-c', "echo 'ruok' | nc localhost 2181"]
-        interval: 10s
-        timeout: 5s
-        retries: 5
-      networks:
-        - confluent
+    image: confluentinc/cp-zookeeper:latest
+    ## Uses the latest version of the Confluent Zookeeper image.
+    hostname: zookeeper
+    ## Sets the hostname for the Zookeeper container.
+    container_name: zookeeper
+    ## Names the container "zookeeper".
+    ports:
+      - "2181:2181"
+      ## Maps port 2181 on the host to port 2181 on the container.
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ## Sets the client port for Zookeeper.
+      ZOOKEEPER_TICK_TIME: 2000
+      ## Sets the tick time for Zookeeper.
+    healthcheck:
+      test: ['CMD', 'bash', '-c', "echo 'ruok' | nc localhost 2181"]
+      ## Checks the health of the container by sending the 'ruok' command to port 2181.
+      interval: 10s
+      ## Runs the health check every 10 seconds.
+      timeout: 5s
+      ## Sets a timeout of 5 seconds for the health check.
+      retries: 5
+      ## Retries the health check 5 times before considering the container unhealthy.
+    networks:
+      - confluent
+      ## Connects the container to the "confluent" network.
 
   broker:
     image: confluentinc/cp-server:latest
+    ## Uses the latest version of the Confluent Kafka broker image.
     hostname: broker
+    ## Sets the hostname for the Kafka broker container.
     container_name: broker
+    ## Names the container "broker".
     depends_on:
       zookeeper:
         condition: service_healthy
+        ## Waits for the Zookeeper service to be healthy before starting.
     ports:
       - "9092:9092"
+      ## Maps port 9092 on the host to port 9092 on the container.
       - "9101:9101"
+      ## Maps port 9101 on the host to port 9101 on the container.
     environment:
       KAFKA_BROKER_ID: 1
+      ## Sets the broker ID to 1.
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      ## Connects to Zookeeper on port 2181.
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      ## Sets the security protocol for Kafka listeners.
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+      ## Advertises the listeners for external and internal connections.
       KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      ## Sets the metrics reporter for Confluent.
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      ## Sets the replication factor for the offsets topic to 1.
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      ## Sets the initial rebalance delay to 0 ms.
       KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      ## Sets the replication factor for the license topic to 1.
       KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      ## Sets the replication factor for the balancer topic to 1.
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      ## Sets the minimum in-sync replicas for the transaction state log to 1.
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      ## Sets the replication factor for the transaction state log to 1.
       KAFKA_JMX_PORT: 9101
+      ## Sets the JMX port to 9101.
       KAFKA_JMX_HOSTNAME: localhost
+      ## Sets the JMX hostname to localhost.
       KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      ## Sets the URL for the schema registry.
       CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: broker:29092
+      ## Sets the bootstrap servers for the metrics reporter.
       CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+      ## Sets the replication factor for the metrics reporter topic to 1.
       CONFLUENT_METRICS_ENABLE: 'false'
+      ## Disables Confluent metrics.
       CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
+      ## Sets the Confluent support customer ID to anonymous.
     networks:
       - confluent
+      ## Connects the container to the "confluent" network.
     healthcheck:
       test: [ "CMD", "bash", "-c", 'nc -z localhost 9092']
+      ## Checks the health of the container by testing connectivity to port 9092.
       interval: 10s
+      ## Runs the health check every 10 seconds.
       timeout: 5s
+      ## Sets a timeout of 5 seconds for the health check.
       retries: 5
+      ## Retries the health check 5 times before considering the container unhealthy.
 
   schema-registry:
     image: confluentinc/cp-schema-registry:latest
+    ## Uses the latest version of the Confluent schema registry image.
     hostname: schema-registry
+    ## Sets the hostname for the schema registry container.
     container_name: schema-registry
+    ## Names the container "schema-registry".
     depends_on:
       broker:
         condition: service_healthy
+        ## Waits for the broker service to be healthy before starting.
     ports:
       - "8081:8081"
+      ## Maps port 8081 on the host to port 8081 on the container.
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      ## Sets the hostname for the schema registry.
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:29092'
+      ## Sets the Kafka bootstrap servers for the schema registry.
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      ## Sets the listeners for the schema registry.
     networks:
       - confluent
+      ## Connects the container to the "confluent" network.
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8081/"]
+      ## Checks the health of the container by sending a request to the schema registry's health endpoint.
       interval: 30s
+      ## Runs the health check every 30 seconds.
       timeout: 10s
+      ## Sets a timeout of 10 seconds for the health check.
       retries: 5
+      ## Retries the health check 5 times before considering the container unhealthy.
 
   control-center:
     image: confluentinc/cp-enterprise-control-center:latest
+    ## Uses the latest version of the Confluent control center image.
     hostname: control-center
+    ## Sets the hostname for the control center container.
     container_name: control-center
+    ## Names the container "control-center".
     depends_on:
       broker:
         condition: service_healthy
+        ## Waits for the broker service to be healthy before starting.
       schema-registry:
         condition: service_healthy
+        ## Waits for the schema registry service to be healthy before starting.
     ports:
       - "9021:9021"
+      ## Maps port 9021 on the host to port 9021 on the container.
     environment:
       CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:29092'
+      ## Sets the bootstrap servers for the control center.
       CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      ## Sets the schema registry URL for the control center.
       CONTROL_CENTER_REPLICATION_FACTOR: 1
+      ## Sets the replication factor for the control center.
       CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+      ## Sets the number of partitions for internal topics.
       CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
+      ## Sets the number of partitions for monitoring interceptor topics.
       CONFLUENT_METRICS_TOPIC_REPLICATION: 1
+      ## Sets the replication factor for metrics topics.
       CONFLIENT_METRICS_ENABLE: 'false'
+      ## Disables Confluent metrics.
       PORT: 9021
+      ## Sets the port for the control center.
     networks:
       - confluent
+      ## Connects the container to the "confluent" network.
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:9021/health" ]
+      ## Checks the health of the container by sending a request to the control center's health endpoint.
       interval: 30s
+      ## Runs the health check every 30 seconds.
       timeout: 10s
+      ## Sets a timeout of 10 seconds for the health check.
       retries: 5
+      ## Retries the health check 5 times before considering the container unhealthy.
 
   webserver:
     image: apache/airflow:latest-python3.10
+    ## Uses the latest version of the Apache Airflow image with Python 3.10.
     command: webserver
+    ## Runs the webserver command in the Airflow container.
     entrypoint: ['/opt/airflow/airflow_script/eltscript.sh']
+    ## Sets the entrypoint to a custom script located at /opt/airflow/airflow_script/eltscript.sh.
     depends_on:
       postgres:
         condition: service_started
+        ## Waits for the postgres service to start before starting.
       control-center:
         condition: service_healthy
+        ## Waits for the control-center service to be healthy before starting.
     environment:
       - LOAD_EX=n
+      ## Sets the LOAD_EX environment variable to 'n'.
       - EXECUTOR=Sequential
+      ## Uses the SequentialExecutor for Airflow.
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      ## Sets the SQL Alchemy connection string for Airflow to use the postgres database.
       - AIRFLOW_WEBSERVER_SECRET_KEY=very_secure_key
+      ## Sets a secret key for the Airflow webserver.
     logging:
       options:
         max-size: 10m
         max-file: "3"
+      ## Sets logging options with a maximum size of 10 MB and a maximum of 3 files.
     volumes:
       - ./dags:/opt/airflow/dags
+      ## Mounts the local directory ./dags to /opt/airflow/dags in the container.
       - ./airflow_script/eltscript.sh:/opt/airflow/airflow_script/eltscript.sh
+      ## Mounts the local script ./airflow_script/eltscript.sh to /opt/airflow/airflow_script/eltscript.sh in the container.
       - ./requirements.txt:/opt/airflow/requirements.txt
+      ## Mounts the local file ./requirements.txt to /opt/airflow/requirements.txt in the container.
     ports:
       - "8080:8080"
+      ## Maps port 8080 on the host to port 8080 on the container.
     healthcheck:
       test: ['CMD-SHELL', "[ -f /opt/airflow/airflow-webserver.pid ]"]
+      ## Checks the health of the container by checking if the webserver PID file exists.
       interval: 30s
+      ## Runs the health check every 30 seconds.
       timeout: 30s
+      ## Sets a timeout of 30 seconds for the health check.
       retries: 3
+      ## Retries the health check 3 times before considering the container unhealthy.
     networks:
       - confluent
+      ## Connects the container to the "confluent" network.
 
   scheduler:
     image: apache/airflow:latest-python3.10
+    ## Uses the latest version of the Apache Airflow image with Python 3.10.
     depends_on:
       # postgres:
       #   condition: service_started
@@ -145,31 +238,48 @@ services:
       #   condition: service_healthy
       webserver:
         condition: service_healthy
+        ## Waits for the webserver service to be healthy before starting.
     volumes:
       - ./dags:/opt/airflow/dags
+      ## Mounts the local directory ./dags to /opt/airflow/dags in the container.
       - ./airflow_script/eltscript.sh:/opt/airflow/airflow_script/eltscript.sh
+      ## Mounts the local script ./airflow_script/eltscript.sh to /opt/airflow/airflow_script/eltscript.sh in the container.
       - ./requirements.txt:/opt/airflow/requirements.txt
+      ## Mounts the local file ./requirements.txt to /opt/airflow/requirements.txt in the container.
     environment:
       - LOAD_EX=n
+      ## Sets the LOAD_EX environment variable to 'n'.
       - EXECUTOR=Sequential
+      ## Uses the SequentialExecutor for Airflow.
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      ## Sets the SQL Alchemy connection string for Airflow to use the postgres database.
       - AIRFLOW_WEBSERVER_SECRET_KEY=very_secure_key
-    command:  bash -c "pip install -r ./requirements.txt && airflow db upgrade && airflow scheduler"
+      ## Sets a secret key for the Airflow webserver.
+    command: bash -c "pip install -r ./requirements.txt && airflow db upgrade && airflow scheduler"
+    ## Runs a bash command to install requirements, upgrade the Airflow database, and start the Airflow scheduler.
     networks:
       - confluent
-  
+      ## Connects the container to the "confluent" network.
+
   postgres:
     image: postgres:15.6
+    ## Uses the Postgres image version 15.6.
     environment:
       - POSTGRES_USER=airflow
+      ## Sets the Postgres user to 'airflow'.
       - POSTGRES_PASSWORD=airflow
+      ## Sets the Postgres password to 'airflow'.
       - POSTGRES_DB=airflow
+      ## Sets the Postgres database name to 'airflow'.
     logging:
       options:
         max-size: 10m
         max-file: "3"
+      ## Sets logging options with a maximum size of 10 MB and a maximum of 3 files.
     networks:
       - confluent
+      ## Connects the container to the "confluent" network.
 
 networks:
   confluent:
+  ## Defines the "confluent" network.
